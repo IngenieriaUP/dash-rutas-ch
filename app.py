@@ -161,7 +161,7 @@ app.layout = html.Div([
         dcc.Graph(id='map-graph')
         ], style={'margin': 'auto auto'})
     ],
-    style={"padding-top": "20px"},
+    #style={"padding-top": "20px"},
     className = 'ten rows'
 )
 
