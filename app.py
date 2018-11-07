@@ -65,7 +65,7 @@ print('#'*40)
 
 layout = dict(
     #autosize=True,
-    height = '100vh',
+    height = '1080px',
     font=dict(color="#edefef"),
     titlefont=dict(
         color="#edefef",
