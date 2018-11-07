@@ -36,7 +36,7 @@ proj_utm = {'datum': 'WGS84', 'ellps': 'WGS84', 'proj': 'utm', 'zone': 18, 'unit
 
 # Datasets
 map_data = pd.read_csv('./data/input/school-hospitalMatrix.csv', index_col=0)
-map_data["color"] = map_data.apply(lambda x: '#ff0000' if x['TYPE'] == "School" else '#0000ff', axis=1)
+map_data["color"] = map_data.apply(lambda x: '#EE2C2C' if x['TYPE'] == "Colegio" else '#4682B4', axis=1)
 
 print("Loading graph")
 init = time.time()
