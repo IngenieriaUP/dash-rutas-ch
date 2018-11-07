@@ -1,20 +1,17 @@
 # Import dependencies
 from warnings import filterwarnings
 filterwarnings('ignore')
-
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table_experiments as dt
 import flask
-#import geopandas as gpd
 import networkx as nx
 import numpy as np
 import pandas as pd
 import pickle
 import plotly
 import os
-#import osmnx as ox
 import requests
 import time
 from dash.dependencies import Input, Output, State
@@ -38,13 +35,8 @@ gmaps = googlemaps.Client(key='AIzaSyDo3XDr4zJsyynCuH9KMQc4IbPrI6YaNGY')
 proj_utm = {'datum': 'WGS84', 'ellps': 'WGS84', 'proj': 'utm', 'zone': 18, 'units': 'm'}
 
 # Datasets
-map_data = pd.read_csv('~/data/input/school-hospitalMatrix.csv', index_col=0)
+map_data = pd.read_csv('./data/input/school-hospitalMatrix.csv', index_col=0)
 map_data["color"] = map_data.apply(lambda x: '#ff0000' if x['TYPE'] == "School" else '#0000ff', axis=1)
-#map_geometry= map_data.apply(lambda x: Point(x['C_LONG'], x['C_LAT']), axis=1)
-#map_data = gpd.GeoDataFrame(data=map_data, geometry=map_geometry,
-#                            crs={'init': 'epsg:4326'})
-#map_data = map_data.to_crs(proj_utm)
-#map_data.reset_index(inplace=True)
 
 print("Loading graph")
 init = time.time()
@@ -61,15 +53,9 @@ print('#'*40)
 #print('n_nodes:',len(nodes))
 print('#'*40)
 
-#print("Loading edges")
-#init = time.time()
-#edges = gpd.read_file('data/input/edges_proj.geojson')
-#wait = time.time() - init
-#print("edges loaded in", wait)
-
 layout = dict(
-    #autosize=True,
-    height = '1080px',
+    autosize=True,
+    height = 1080,
     font=dict(color="#edefef"),
     titlefont=dict(
         color="#edefef",
@@ -169,14 +155,14 @@ def gen_map(map_data, route_line):
         "layout": layout,
         }
 
-app.layout = html.Div(children = [
+app.layout = html.Div([
     # Map
-    html.Div(children = [
+    html.Div([
         dcc.Graph(id='map-graph')
-        ])
+        ], style={'margin': 'auto auto'})
     ],
     style={"padding-top": "20px"},
-    className = '80 rows'
+    className = 'ten rows'
 )
 
 def get_boundingbox(x, y, margin):
@@ -252,32 +238,7 @@ def get_directions_google(gmaps, origin, destination):
         route_decoded = googlemaps.convert.decode_polyline(overview_polyline['points'])
     else:
         pass
-    #lats = []
-	#lons = []
 
-	#for i in directions['routes']:
-	#	for j, k in i.items():
-	#		if j == 'legs':
-	#			for l in k:
-	#				for m, n in l.items():
-	#					if m == 'steps':
-	#						for o in n:
-	#							for p, q in o.items():
-	#								if p == 'end_location':
-	#									for l1, l2 in q.items():
-	#										if l1 == 'lat':
-	#											lats.append(l2)
-	#										if l1 == 'lng':
-	#											lons.append(l2)
-
-    #route = []
-
-    #steps = dirs[0]['legs'][0]['steps']
-    #for step in steps:
-    #    route.append((step['start_location']['lat'], step['start_location']['lng']))
-    #    route.append((step['end_location']['lat'], step['end_location']['lng']))
-        #if step == dirs[0]['legs'][0]['steps'][-1]:
-        #    route.append((step['end_location']['lat'], step['end_location']['lng']))
     return list(map(ldict2ltup,route_decoded))
 
 def get_scattermap_lines(source, target):
