@@ -34,7 +34,7 @@ gmaps = googlemaps.Client(key='AIzaSyDo3XDr4zJsyynCuH9KMQc4IbPrI6YaNGY')
 proj_utm = {'datum': 'WGS84', 'ellps': 'WGS84', 'proj': 'utm', 'zone': 18, 'units': 'm'}
 
 # Datasets
-map_data = pd.read_csv('data/input/school-hospitalMatrix.csv', index_col=0)
+map_data = pd.read_csv('~/data/input/school-hospitalMatrix.csv', index_col=0)
 map_data["color"] = map_data.apply(lambda x: '#ff0000' if x['TYPE'] == "School" else '#0000ff', axis=1)
 #map_geometry= map_data.apply(lambda x: Point(x['C_LONG'], x['C_LAT']), axis=1)
 #map_data = gpd.GeoDataFrame(data=map_data, geometry=map_geometry,
