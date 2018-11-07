@@ -29,29 +29,29 @@ if 'DYNO' in os.environ:
 
 # API keys
 mapbox_access_token = "pk.eyJ1IjoiY2xhdWRpbzk3IiwiYSI6ImNqbzM2NmFtMjB0YnUzd3BvenZzN3QzN3YifQ.heZHwQTY8TWhuO0u2-BxxA"
-gmaps = googlemaps.Client(key='AIzaSyDo3XDr4zJsyynCuH9KMQc4IbPrI6YaNGY')
+#gmaps = googlemaps.Client(key='AIzaSyDo3XDr4zJsyynCuH9KMQc4IbPrI6YaNGY')
 
 # Coordinate system
-proj_utm = {'datum': 'WGS84', 'ellps': 'WGS84', 'proj': 'utm', 'zone': 18, 'units': 'm'}
+#proj_utm = {'datum': 'WGS84', 'ellps': 'WGS84', 'proj': 'utm', 'zone': 18, 'units': 'm'}
 
 # Datasets
 map_data = pd.read_csv('./data/input/school-hospitalMatrix.csv', index_col=0)
 map_data["color"] = map_data.apply(lambda x: '#ff0000' if x['TYPE'] == "School" else '#0000ff', axis=1)
 
-print("Loading graph")
-init = time.time()
+#print("Loading graph")
+#init = time.time()
 #graph = pickle.load(open("data/input/lima_graph_proj.pk","rb"))
-wait = time.time() - init
-print("graph loaded in", wait)
+#wait = time.time() - init
+#print("graph loaded in", wait)
 
-print("Loading nodes")
-init = time.time()
+#print("Loading nodes")
+#init = time.time()
 #nodes = ox.graph_to_gdfs(graph, nodes=True, edges=False)
-wait = time.time() - init
-print("nodes loaded in", wait)
-print('#'*40)
+#wait = time.time() - init
+#print("nodes loaded in", wait)
+#print('#'*40)
 #print('n_nodes:',len(nodes))
-print('#'*40)
+#print('#'*40)
 
 layout = dict(
     autosize=True,
@@ -85,75 +85,85 @@ layout = dict(
     )
 )
 
-initial_map = {
-    "data":
-    [
-        {"type": "scattermapbox",
-        "lat": list(map_data['C_LAT']),
-        "lon": list(map_data['C_LONG']),
-        "text": list(map_data['TYPE']),
-        "customdata": list(map_data['LINK']),
-        "mode": "markers",
-        "marker":
-            {
-            "size": 5,
-            "opacity": 0.7,
-            "color": list(map_data['color'])
-            }
-        }
-    ], "layout": layout
-}
+#initial_map = {
+#    "data":
+#    [
+#        {"type": "scattermapbox",
+#        "lat": map_data['C_LAT'],
+#        "lon": map_data['C_LONG'],
+#        "text": map_data['TYPE'],
+#        "customdata": map_data['LINK'],
+#        "mode": "markers",
+#        "marker":
+#            {
+#            "size": 5,
+#            "opacity": 0.7,
+#            "color": map_data['color']
+#            }
+#        }
+#    ], "layout": layout
+#}
 
-def gen_map(map_data, route_line):
+def gen_map(map_data, route_line=None, initial_map=True):
     points = {
             "type": "scattermapbox",
-            "lat": list(map_data['C_LAT']),
-            "lon": list(map_data['C_LONG']),
-            "text": list(map_data['TYPE']),
-            "customdata": list(map_data['LINK']),
+            "lat": map_data['C_LAT'],
+            "lon": map_data['C_LONG'],
+            "text": map_data['TYPE'],
+            "name": map_data['TYPE'],
+            "customdata": map_data['LINK'],
+            "hoverinfo": "text+name",
             "mode": "markers",
             "marker": {
-                "size": 5,
-                "opacity": 0.7,
-                "color": list(map_data['color'])
+                "size": 10,
+                "opacity": 0.5,
+                "color": map_data['color']
                 }
             }
 
     points_inner = {
             "type": "scattermapbox",
-            "lat": list(map_data['C_LAT']),
-            "lon": list(map_data['C_LONG']),
-            "text": list(map_data['TYPE']),
-            "customdata": list(map_data['LINK']),
+            "lat": map_data['C_LAT'],
+            "lon": map_data['C_LONG'],
+            "text": map_data['TYPE'],
+            "name": map_data['TYPE'],
+            "customdata": map_data['LINK'],
+            "hoverinfo": "text+name",
             "mode": "markers",
             "marker": {
-                "size": 3,
-                "opacity": 0.7,
-                "color": list(map_data['color'])
+                "size": 5,
+                "opacity": 0.5,
+                "color": map_data['color']
                 }
             }
-
-    route = {
-            "type": "scattermapbox",
-            "lat": [tuple_xy[0] for tuple_xy in route_line[:-1]],
-            "lon": [tuple_xy[1] for tuple_xy in route_line[1:]],
-            "mode": "lines+markers",
-            "line": {
-                "width": 7,
-                "color": 'green',
-                "opacity": 0.5
-                },
-            "marker": {
-                "size": 7,
-                "opacity": 0.7,
-                "color": 'green'
+    if route_line != None:
+        route = {
+                "type": "scattermapbox",
+                "lat": [tuple_xy[0] for tuple_xy in route_line[:-1]],
+                "lon": [tuple_xy[1] for tuple_xy in route_line[1:]],
+                "mode": "lines+markers",
+                "line": {
+                    "width": 7,
+                    "color": 'green',
+                    "opacity": 0.5
+                    },
+                "marker": {
+                    "size": 7,
+                    "opacity": 0.7,
+                    "color": 'green'
+                    }
                 }
-            }
 
-    return {
-        "data": [points, route],
-        "layout": layout,
-        }
+    if initial_map:
+        return {
+            "data": [points, points_inner],
+            "layout": layout,
+            }
+    else:
+        return {
+            "data": [points, points_inner, route],
+            "layout": layout,
+            }
 
 app.layout = html.Div([
     # Map
@@ -275,7 +285,7 @@ def get_scattermap_lines(source, target):
 def _update_routes(clickData, relayoutData):
     if clickData == None:
         print('Initial Map')
-        return initial_map
+        return gen_map(map_data)
     else:
         print('#'*30)
         print(clickData)
@@ -293,7 +303,7 @@ def _update_routes(clickData, relayoutData):
         route_line = get_directions_mapbox(source, target)
         route_line.insert(0, tuple([source_data['C_LAT'], source_data['C_LONG']]))
         route_line.append(tuple([target_data['C_LAT'], target_data['C_LONG']]))
-        new_map = gen_map(map_data, route_line)
+        new_map = gen_map(map_data, route_line, initial_map=False)
         if relayoutData:
             if 'mapbox.center' in relayoutData:
                 new_map['layout']['mapbox']['center'] = relayoutData['mapbox.center']
@@ -314,4 +324,4 @@ for css in external_css:
     app.css.append_css({"external_url": css})
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, port='8050')
