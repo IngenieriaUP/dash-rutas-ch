@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import pickle
 import plotly
-import osmnx as ox
+#import osmnx as ox
 import requests
 import time
 from dash.dependencies import Input, Output, State
