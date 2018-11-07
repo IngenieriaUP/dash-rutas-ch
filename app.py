@@ -23,6 +23,7 @@ app = dash.Dash()
 server = app.server
 
 if 'DYNO' in os.environ:
+    # Add Google Analytics
     app.scripts.append_script({
         'external_url': 'https://cdn.rawgit.com/chriddyp/ca0d8f02a1659981a0ea7f013a378bbd/raw/e79f3f789517deec58f41251f7dbb6bee72c44ab/plotly_ga.js'
     })
@@ -85,25 +86,6 @@ layout = dict(
     )
 )
 
-#initial_map = {
-#    "data":
-#    [
-#        {"type": "scattermapbox",
-#        "lat": map_data['C_LAT'],
-#        "lon": map_data['C_LONG'],
-#        "text": map_data['TYPE'],
-#        "customdata": map_data['LINK'],
-#        "mode": "markers",
-#        "marker":
-#            {
-#            "size": 5,
-#            "opacity": 0.7,
-#            "color": map_data['color']
-#            }
-#        }
-#    ], "layout": layout
-#}
-
 def gen_map(map_data, route_line=None, initial_map=True):
     points = {
             "type": "scattermapbox",
@@ -143,16 +125,22 @@ def gen_map(map_data, route_line=None, initial_map=True):
                 "lon": [tuple_xy[1] for tuple_xy in route_line[1:]],
                 "mode": "lines+markers",
                 "line": {
-                    "width": 7,
+                    "width": 5,
+                    "opacity": 0.5,
                     "color": 'green',
-                    "opacity": 0.5
-                    },
-                "marker": {
-                    "size": 7,
-                    "opacity": 0.7,
-                    "color": 'green'
                     }
                 }
+        source_target_points = {
+                                "type": "scattermapbox",
+                                "lat": [route_line[i][0] for i in [0,-1]],
+                                "lon": [route_line[i][1] for i in [0,-1]],
+                                "mode": "markers",
+                                "marker": {
+                                    "size": 17,
+                                    "opacity": 0.5,
+                                    "color": []
+                                    }
+                                }
 
     if initial_map:
         return {
@@ -161,7 +149,7 @@ def gen_map(map_data, route_line=None, initial_map=True):
             }
     else:
         return {
-            "data": [points, points_inner, route],
+            "data": [points, points_inner, source_target_points, route],
             "layout": layout,
             }
 
@@ -240,11 +228,9 @@ def get_directions_mapbox(source, target):
     return list(map(llist2ltup,route_data))
 
 def get_directions_google(gmaps, origin, destination):
-    #reverse_geocode_result = gmaps.reverse_geocode(source)
     dirs = gmaps.directions(origin=origin, destination=destination)
     overview_polyline = dirs[0].get('overview_polyline')
     if overview_polyline is not None:
-        #print(overview_polyline)
         route_decoded = googlemaps.convert.decode_polyline(overview_polyline['points'])
     else:
         pass
@@ -255,7 +241,7 @@ def get_scattermap_lines(source, target):
     # Filter graph to reduce time
     subgraph, subgraph_nodes_ix = get_subgraph(graph, nodes, source, target)
     # Get nearest nodes in the subgraph
-    source_node_id, target_node_id = get_nearest_nodes(graph, source, target)
+    source_node_id, target_node_id = get_nearest_nodes(subgraph, source, target)
 
     print('#'*20,'source and target nodes')
     print(source_node_id)
@@ -264,7 +250,7 @@ def get_scattermap_lines(source, target):
     # Get shortest_path (list of nodes)
     print("Getting shortest path")
     init = time.time()
-    opt_route = nx.shortest_path(G=graph, source=source_node_id,
+    opt_route = nx.shortest_path(G=subgraph, source=source_node_id,
                                  target=target_node_id, weight='length')
     wait = time.time() - init
     print("shortest path in", wait)
@@ -304,6 +290,7 @@ def _update_routes(clickData, relayoutData):
         route_line.insert(0, tuple([source_data['C_LAT'], source_data['C_LONG']]))
         route_line.append(tuple([target_data['C_LAT'], target_data['C_LONG']]))
         new_map = gen_map(map_data, route_line, initial_map=False)
+        new_map['data'][2]['marker']['color'] = [source_data['color'], target_data['color']]
         if relayoutData:
             if 'mapbox.center' in relayoutData:
                 new_map['layout']['mapbox']['center'] = relayoutData['mapbox.center']
@@ -324,4 +311,4 @@ for css in external_css:
     app.css.append_css({"external_url": css})
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port='8050')
+    app.run_server(debug=True)
