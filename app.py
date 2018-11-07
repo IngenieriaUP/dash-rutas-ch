@@ -23,35 +23,36 @@ app = dash.Dash()
 server = app.server
 
 if 'DYNO' in os.environ:
+    # Add Google Analytics
     app.scripts.append_script({
         'external_url': 'https://cdn.rawgit.com/chriddyp/ca0d8f02a1659981a0ea7f013a378bbd/raw/e79f3f789517deec58f41251f7dbb6bee72c44ab/plotly_ga.js'
     })
 
 # API keys
 mapbox_access_token = "pk.eyJ1IjoiY2xhdWRpbzk3IiwiYSI6ImNqbzM2NmFtMjB0YnUzd3BvenZzN3QzN3YifQ.heZHwQTY8TWhuO0u2-BxxA"
-gmaps = googlemaps.Client(key='AIzaSyDo3XDr4zJsyynCuH9KMQc4IbPrI6YaNGY')
+#gmaps = googlemaps.Client(key='AIzaSyDo3XDr4zJsyynCuH9KMQc4IbPrI6YaNGY')
 
 # Coordinate system
-proj_utm = {'datum': 'WGS84', 'ellps': 'WGS84', 'proj': 'utm', 'zone': 18, 'units': 'm'}
+#proj_utm = {'datum': 'WGS84', 'ellps': 'WGS84', 'proj': 'utm', 'zone': 18, 'units': 'm'}
 
 # Datasets
 map_data = pd.read_csv('./data/input/school-hospitalMatrix.csv', index_col=0)
 map_data["color"] = map_data.apply(lambda x: '#EE2C2C' if x['TYPE'] == "Colegio" else '#4682B4', axis=1)
 
-print("Loading graph")
-init = time.time()
+#print("Loading graph")
+#init = time.time()
 #graph = pickle.load(open("data/input/lima_graph_proj.pk","rb"))
-wait = time.time() - init
-print("graph loaded in", wait)
+#wait = time.time() - init
+#print("graph loaded in", wait)
 
-print("Loading nodes")
-init = time.time()
+#print("Loading nodes")
+#init = time.time()
 #nodes = ox.graph_to_gdfs(graph, nodes=True, edges=False)
-wait = time.time() - init
-print("nodes loaded in", wait)
-print('#'*40)
+#wait = time.time() - init
+#print("nodes loaded in", wait)
+#print('#'*40)
 #print('n_nodes:',len(nodes))
-print('#'*40)
+#print('#'*40)
 
 layout = dict(
     autosize=True,
@@ -85,75 +86,72 @@ layout = dict(
     )
 )
 
-initial_map = {
-    "data":
-    [
-        {"type": "scattermapbox",
-        "lat": list(map_data['C_LAT']),
-        "lon": list(map_data['C_LONG']),
-        "text": list(map_data['TYPE']),
-        "customdata": list(map_data['LINK']),
-        "mode": "markers",
-        "marker":
-            {
-            "size": 5,
-            "opacity": 0.7,
-            "color": list(map_data['color'])
-            }
-        }
-    ], "layout": layout
-}
-
-def gen_map(map_data, route_line):
+def gen_map(map_data, route_line=None, initial_map=True):
     points = {
             "type": "scattermapbox",
-            "lat": list(map_data['C_LAT']),
-            "lon": list(map_data['C_LONG']),
-            "text": list(map_data['TYPE']),
-            "customdata": list(map_data['LINK']),
+            "lat": map_data['C_LAT'],
+            "lon": map_data['C_LONG'],
+            "text": map_data['TYPE'],
+            "name": map_data['TYPE'],
+            "customdata": map_data['LINK'],
+            "hoverinfo": "text+name",
             "mode": "markers",
             "marker": {
-                "size": 5,
-                "opacity": 0.7,
-                "color": list(map_data['color'])
+                "size": 10,
+                "opacity": 0.5,
+                "color": map_data['color']
                 }
             }
 
     points_inner = {
             "type": "scattermapbox",
-            "lat": list(map_data['C_LAT']),
-            "lon": list(map_data['C_LONG']),
-            "text": list(map_data['TYPE']),
-            "customdata": list(map_data['LINK']),
+            "lat": map_data['C_LAT'],
+            "lon": map_data['C_LONG'],
+            "text": map_data['TYPE'],
+            "name": map_data['TYPE'],
+            "customdata": map_data['LINK'],
+            "hoverinfo": "text+name",
             "mode": "markers",
             "marker": {
-                "size": 3,
-                "opacity": 0.7,
-                "color": list(map_data['color'])
+                "size": 5,
+                "opacity": 0.5,
+                "color": map_data['color']
                 }
             }
-
-    route = {
-            "type": "scattermapbox",
-            "lat": [tuple_xy[0] for tuple_xy in route_line[:-1]],
-            "lon": [tuple_xy[1] for tuple_xy in route_line[1:]],
-            "mode": "lines+markers",
-            "line": {
-                "width": 7,
-                "color": 'green',
-                "opacity": 0.5
-                },
-            "marker": {
-                "size": 7,
-                "opacity": 0.7,
-                "color": 'green'
+    if route_line != None:
+        route = {
+                "type": "scattermapbox",
+                "lat": [tuple_xy[0] for tuple_xy in route_line[:-1]],
+                "lon": [tuple_xy[1] for tuple_xy in route_line[1:]],
+                "mode": "lines+markers",
+                "line": {
+                    "width": 5,
+                    "opacity": 0.5,
+                    "color": 'green',
+                    }
                 }
-            }
+        source_target_points = {
+                                "type": "scattermapbox",
+                                "lat": [route_line[i][0] for i in [0,-1]],
+                                "lon": [route_line[i][1] for i in [0,-1]],
+                                "mode": "markers",
+                                "marker": {
+                                    "size": 17,
+                                    "opacity": 0.5,
+                                    "color": []
+                                    }
+                                }
 
-    return {
-        "data": [points, route],
-        "layout": layout,
-        }
+    if initial_map:
+        return {
+            "data": [points, points_inner],
+            "layout": layout,
+            }
+    else:
+        return {
+            "data": [points, points_inner, source_target_points, route],
+            "layout": layout,
+            }
 
 app.layout = html.Div([
     # Map
@@ -230,11 +228,9 @@ def get_directions_mapbox(source, target):
     return list(map(llist2ltup,route_data))
 
 def get_directions_google(gmaps, origin, destination):
-    #reverse_geocode_result = gmaps.reverse_geocode(source)
     dirs = gmaps.directions(origin=origin, destination=destination)
     overview_polyline = dirs[0].get('overview_polyline')
     if overview_polyline is not None:
-        #print(overview_polyline)
         route_decoded = googlemaps.convert.decode_polyline(overview_polyline['points'])
     else:
         pass
@@ -245,7 +241,7 @@ def get_scattermap_lines(source, target):
     # Filter graph to reduce time
     subgraph, subgraph_nodes_ix = get_subgraph(graph, nodes, source, target)
     # Get nearest nodes in the subgraph
-    source_node_id, target_node_id = get_nearest_nodes(graph, source, target)
+    source_node_id, target_node_id = get_nearest_nodes(subgraph, source, target)
 
     print('#'*20,'source and target nodes')
     print(source_node_id)
@@ -254,7 +250,7 @@ def get_scattermap_lines(source, target):
     # Get shortest_path (list of nodes)
     print("Getting shortest path")
     init = time.time()
-    opt_route = nx.shortest_path(G=graph, source=source_node_id,
+    opt_route = nx.shortest_path(G=subgraph, source=source_node_id,
                                  target=target_node_id, weight='length')
     wait = time.time() - init
     print("shortest path in", wait)
@@ -275,7 +271,7 @@ def get_scattermap_lines(source, target):
 def _update_routes(clickData, relayoutData):
     if clickData == None:
         print('Initial Map')
-        return initial_map
+        return gen_map(map_data)
     else:
         print('#'*30)
         print(clickData)
@@ -293,7 +289,8 @@ def _update_routes(clickData, relayoutData):
         route_line = get_directions_mapbox(source, target)
         route_line.insert(0, tuple([source_data['C_LAT'], source_data['C_LONG']]))
         route_line.append(tuple([target_data['C_LAT'], target_data['C_LONG']]))
-        new_map = gen_map(map_data, route_line)
+        new_map = gen_map(map_data, route_line, initial_map=False)
+        new_map['data'][2]['marker']['color'] = [source_data['color'], target_data['color']]
         if relayoutData:
             if 'mapbox.center' in relayoutData:
                 new_map['layout']['mapbox']['center'] = relayoutData['mapbox.center']
