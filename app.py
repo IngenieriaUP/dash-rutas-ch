@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import pickle
 import plotly
+import os
 #import osmnx as ox
 import requests
 import time
@@ -20,11 +21,14 @@ from dash.dependencies import Input, Output, State
 from shapely.geometry import LineString, Point
 import googlemaps
 
-external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
-
 # Initialize dash application
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app = dash.Dash()
 server = app.server
+
+if 'DYNO' in os.environ:
+    app.scripts.append_script({
+        'external_url': 'https://cdn.rawgit.com/chriddyp/ca0d8f02a1659981a0ea7f013a378bbd/raw/e79f3f789517deec58f41251f7dbb6bee72c44ab/plotly_ga.js'
+    })
 
 # API keys
 mapbox_access_token = "pk.eyJ1IjoiY2xhdWRpbzk3IiwiYSI6ImNqbzM2NmFtMjB0YnUzd3BvenZzN3QzN3YifQ.heZHwQTY8TWhuO0u2-BxxA"
@@ -171,6 +175,7 @@ app.layout = html.Div(children = [
         dcc.Graph(id='map-graph')
         ])
     ],
+    style={"padding-top": "20px"},
     className = '80 rows'
 )
 
@@ -336,16 +341,16 @@ def _update_routes(clickData, relayoutData):
 
         return new_map
 
-#external_css = ["https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css",
-#                "//fonts.googleapis.com/css?family=Raleway:400,300,600",
-#                "//fonts.googleapis.com/css?family=Dosis:Medium",
-#                "https://cdn.rawgit.com/plotly/dash-app-stylesheets/62f0eb4f1fadbefea64b2404493079bf848974e8/dash-uber-ride-demo.css",
-#                "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"]
-
-#for css in external_css:
-#    app.css.append_css({"external_url": css})
 
 # Boostrap CSS.
+external_css = ["https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css",
+                "//fonts.googleapis.com/css?family=Raleway:400,300,600",
+                "//fonts.googleapis.com/css?family=Dosis:Medium",
+                "https://cdn.rawgit.com/plotly/dash-app-stylesheets/62f0eb4f1fadbefea64b2404493079bf848974e8/dash-uber-ride-demo.css",
+                "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"]
+
+for css in external_css:
+    app.css.append_css({"external_url": css})
 
 if __name__ == '__main__':
     app.run_server(debug=True)
