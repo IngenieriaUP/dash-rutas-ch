@@ -87,6 +87,14 @@ layout = dict(
     paper_bgcolor='#4b4b4b',
     showlegend=False,
     title='Rutas de Evacuación de Colegio a Hospitales',
+    images= [dict(
+                  source= "https://image.ibb.co/eyXtYV/legend.png",
+                  xref= "x",
+                  yref= "y",
+                  x= 4.7,
+                  y= 3.85,
+                  sizex= 1,
+                  sizey= 1)],
     mapbox=dict(
         accesstoken=mapbox_access_token,
         bearing=0,
@@ -98,6 +106,7 @@ layout = dict(
         pitch=0,
         zoom=10
     )
+
 )
 
 def gen_map(map_data, route_line=None, initial_map=True):
@@ -175,7 +184,9 @@ app.layout = html.Div([
     html.Div([
         dcc.Graph(id='map-graph')
         ], style={'margin': 'auto auto'})
+
     ],
+
     #style={"padding-top": "20px"},
     className = 'ten rows'
 )
