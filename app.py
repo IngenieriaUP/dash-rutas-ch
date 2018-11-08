@@ -17,6 +17,7 @@ import time
 from dash.dependencies import Input, Output, State
 from shapely.geometry import LineString, Point
 import googlemaps
+import matplotlib as plt
 
 # Initialize dash application
 app = dash.Dash()
@@ -35,9 +36,22 @@ mapbox_access_token = "pk.eyJ1IjoiY2xhdWRpbzk3IiwiYSI6ImNqbzM2NmFtMjB0YnUzd3Bven
 # Coordinate system
 #proj_utm = {'datum': 'WGS84', 'ellps': 'WGS84', 'proj': 'utm', 'zone': 18, 'units': 'm'}
 
+#colormapping
+def fadeColor(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+    assert len(c1)==len(c2)
+    assert mix>=0 and mix<=1, 'mix='+str(mix)
+    rgb1=np.array([int(c1[ii:ii+2],16) for ii in range(1,len(c1),2)])
+    rgb2=np.array([int(c2[ii:ii+2],16) for ii in range(1,len(c2),2)])
+    rgb=((1-mix)*rgb1+mix*rgb2).astype(int)
+    #cOld='#'+''.join([hex(a)[2:] for a in rgb])
+    #print(11,[hex(a)[2:].zfill(2) for a in rgb])
+    c='#'+('{:}'*3).format(*[hex(a)[2:].zfill(2) for a in rgb])
+    #print(rgb1, rgb2, rgb, cOld, c)
+    return c
+
 # Datasets
 map_data = pd.read_csv('./data/input/school-hospitalMatrix.csv', index_col=0)
-map_data["color"] = map_data.apply(lambda x: '#EE2C2C' if x['TYPE'] == "Colegio" else '#4682B4', axis=1)
+map_data["color"] = map_data.apply(lambda x: '#4682B4' if x['TYPE'] == "Colegio" else fadeColor('#2ca02c','#ff0000',x['fis_score']), axis=1)
 
 #print("Loading graph")
 #init = time.time()
@@ -73,6 +87,14 @@ layout = dict(
     paper_bgcolor='#4b4b4b',
     showlegend=False,
     title='Rutas de Evacuación de Colegio a Hospitales',
+    images= [dict(
+                  source= "https://image.ibb.co/eyXtYV/legend.png",
+                  xref= "x",
+                  yref= "y",
+                  x= 4.7,
+                  y= 3.85,
+                  sizex= 1,
+                  sizey= 1)],
     mapbox=dict(
         accesstoken=mapbox_access_token,
         bearing=0,
@@ -84,6 +106,7 @@ layout = dict(
         pitch=0,
         zoom=10
     )
+
 )
 
 def gen_map(map_data, route_line=None, initial_map=True):
@@ -91,26 +114,29 @@ def gen_map(map_data, route_line=None, initial_map=True):
             "type": "scattermapbox",
             "lat": map_data['C_LAT'],
             "lon": map_data['C_LONG'],
-            "text": map_data['TYPE'],
-            "name": map_data['TYPE'],
+            "text": map_data['NOMBRE'],
+            "name": map_data['NOMBRE'],
             "customdata": map_data['LINK'],
-            "hoverinfo": "text+name",
+            "hoverinfo": "text",
+            "legendgroup":  map_data['TYPE'],
             "mode": "markers",
             "marker": {
                 "size": 10,
                 "opacity": 0.5,
                 "color": map_data['color']
                 }
+
             }
 
     points_inner = {
             "type": "scattermapbox",
             "lat": map_data['C_LAT'],
             "lon": map_data['C_LONG'],
-            "text": map_data['TYPE'],
-            "name": map_data['TYPE'],
+            "text": map_data['NOMBRE'],
+            "name": map_data['NOMBRE'],
             "customdata": map_data['LINK'],
-            "hoverinfo": "text+name",
+            "hoverinfo": "text",
+            "legendgroup": map_data['TYPE'],
             "mode": "markers",
             "marker": {
                 "size": 5,
@@ -158,7 +184,9 @@ app.layout = html.Div([
     html.Div([
         dcc.Graph(id='map-graph')
         ], style={'margin': 'auto auto'})
+
     ],
+
     #style={"padding-top": "20px"},
     className = 'ten rows'
 )
