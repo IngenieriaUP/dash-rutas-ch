@@ -50,7 +50,7 @@ def fadeColor(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) 
     return c
 
 # Datasets
-map_data = pd.read_csv('./data/input/school-hospitalMatrix.csv', index_col=0)
+map_data = pd.read_csv('./data/merge/POIsWithFIS.csv', index_col=0)
 map_data["color"] = map_data.apply(lambda x: '#4682B4' if x['TYPE'] == "Colegio" else fadeColor('#2ca02c','#ff0000',x['fis_score']), axis=1)
 
 #print("Loading graph")
