@@ -109,12 +109,14 @@ def gen_map(map_data, route_line=None, initial_map=True):
             "name": map_data['NOMBRE'],
             "customdata": map_data['LINK'],
             "hoverinfo": "text",
+            "legendgroup":  map_data['TYPE'],
             "mode": "markers",
             "marker": {
                 "size": 10,
                 "opacity": 0.5,
                 "color": map_data['color']
                 }
+
             }
 
     points_inner = {
@@ -125,6 +127,7 @@ def gen_map(map_data, route_line=None, initial_map=True):
             "name": map_data['NOMBRE'],
             "customdata": map_data['LINK'],
             "hoverinfo": "text",
+            "legendgroup": map_data['TYPE'],
             "mode": "markers",
             "marker": {
                 "size": 5,
