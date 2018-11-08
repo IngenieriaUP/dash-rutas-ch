@@ -137,8 +137,7 @@ def gen_map(map_data, route_line=None, initial_map=True):
                                 "mode": "markers",
                                 "marker": {
                                     "size": 17,
-                                    "opacity": 0.5,
-                                    "color": []
+                                    "opacity": 0.5
                                     }
                                 }
 
