@@ -8,6 +8,7 @@ import dash_table_experiments as dt
 import flask
 import networkx as nx
 import numpy as np
+import geopandas as gpd
 import pandas as pd
 import pickle
 import plotly
@@ -18,6 +19,7 @@ from dash.dependencies import Input, Output, State
 from shapely.geometry import LineString, Point
 import googlemaps
 import matplotlib as plt
+import osmnx as ox
 
 # Initialize dash application
 app = dash.Dash()
@@ -53,20 +55,20 @@ def fadeColor(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) 
 map_data = pd.read_csv('./data/merge/POIsWithFIS.csv', index_col=0)
 map_data["color"] = map_data.apply(lambda x: '#4682B4' if x['TYPE'] == "Colegio" else fadeColor('#2ca02c','#ff0000',x['fis_score']), axis=1)
 
-#print("Loading graph")
-#init = time.time()
-#graph = pickle.load(open("data/input/lima_graph_proj.pk","rb"))
-#wait = time.time() - init
-#print("graph loaded in", wait)
+print("Loading graph")
+init = time.time()
+graph = pickle.load(open("data/input/lima_graph_proj.pk","rb"))
+wait = time.time() - init
+print("graph loaded in", wait)
 
-#print("Loading nodes")
-#init = time.time()
-#nodes = ox.graph_to_gdfs(graph, nodes=True, edges=False)
-#wait = time.time() - init
-#print("nodes loaded in", wait)
-#print('#'*40)
-#print('n_nodes:',len(nodes))
-#print('#'*40)
+print("Loading nodes")
+init = time.time()
+nodes = ox.graph_to_gdfs(graph, nodes=True, edges=False)
+wait = time.time() - init
+print("nodes loaded in", wait)
+print('#'*40)
+print('n_nodes:',len(nodes))
+print('#'*40)
 
 layout = dict(
     autosize=True,
@@ -147,8 +149,8 @@ def gen_map(map_data, route_line=None, initial_map=True):
     if route_line != None:
         route = {
                 "type": "scattermapbox",
-                "lat": [tuple_xy[0] for tuple_xy in route_line[:-1]],
-                "lon": [tuple_xy[1] for tuple_xy in route_line[1:]],
+                "lat": [tuple_xy[0] for tuple_xy in route_line],
+                "lon": [tuple_xy[1] for tuple_xy in route_line],
                 "mode": "lines+markers",
                 "line": {
                     "width": 5,
@@ -179,10 +181,20 @@ def gen_map(map_data, route_line=None, initial_map=True):
             "layout": layout,
             }
 
-app.layout = html.Div([
+app.layout = html.Div(
+
+    [
     # Map
     html.Div([
-        dcc.Graph(id='map-graph')
+        dcc.Graph(id='map-graph'),
+        dcc.Dropdown(
+            id='route_profile',
+            options=[
+                {'label': 'En automóvil', 'value':'driving'},
+                {'label': 'Caminando', 'value':'walking'}
+            ],
+            value='walking'
+        )
         ], style={'margin': 'auto auto'})
 
     ],
@@ -190,6 +202,8 @@ app.layout = html.Div([
     #style={"padding-top": "20px"},
     className = 'ten rows'
 )
+
+#### Obtain route from graph ####
 
 def get_boundingbox(x, y, margin):
     x = Point(x)
@@ -236,35 +250,6 @@ def get_route_data(route, nodes):
     route_geom['length_m'] = route_geom.length
     return route_geom, route_line
 
-def ldict2ltup(d):
-    #maps a list of dictionaries to a list of tuples
-    return (d['lat'],d['lng'])
-
-def llist2ltup(d):
-    #maps a list of coordinate lists to a list of tuples
-    return (d[1],d[0])
-
-def get_directions_mapbox(source, target):
-    # Mapbox driving direction API call
-    source_str = "{},{}".format(source[1],source[0])
-    target_str = "{},{}".format(target[1],target[0])
-    coords = ";".join([source_str,target_str])
-    ROUTE_URL = "https://api.mapbox.com/directions/v5/mapbox/driving/{0}.json?access_token={1}&overview=full&geometries=geojson".format(coords, mapbox_access_token)
-    result = requests.get(ROUTE_URL)
-    data = result.json()
-    route_data = data["routes"][0]["geometry"]["coordinates"]
-    return list(map(llist2ltup,route_data))
-
-def get_directions_google(gmaps, origin, destination):
-    dirs = gmaps.directions(origin=origin, destination=destination)
-    overview_polyline = dirs[0].get('overview_polyline')
-    if overview_polyline is not None:
-        route_decoded = googlemaps.convert.decode_polyline(overview_polyline['points'])
-    else:
-        pass
-
-    return list(map(ldict2ltup,route_decoded))
-
 def get_scattermap_lines(source, target):
     # Filter graph to reduce time
     subgraph, subgraph_nodes_ix = get_subgraph(graph, nodes, source, target)
@@ -291,12 +276,47 @@ def get_scattermap_lines(source, target):
 
     return route_line
 
+###################################
+
+#### Obtain route from external API ####
+
+def ldict2ltup(d):
+    #maps a list of dictionaries to a list of tuples
+    return (d['lat'],d['lng'])
+
+def llist2ltup(d):
+    #maps a list of coordinate lists to a list of tuples
+    return (d[1],d[0])
+
+def get_directions_mapbox(source, target, profile):
+    # Mapbox driving direction API call
+    source_str = "{},{}".format(source[1],source[0])
+    target_str = "{},{}".format(target[1],target[0])
+    coords = ";".join([source_str,target_str])
+    ROUTE_URL = "https://api.mapbox.com/directions/v5/mapbox/" + profile + "/" + str(source[1]) + "," + str(source[0]) + ";" + str(target[1]) + "," + str(target[0]) + "?geometries=geojson&access_token=" + mapbox_access_token
+    result = requests.get(ROUTE_URL)
+    data = result.json()
+    route_data = data["routes"][0]["geometry"]["coordinates"]
+    return list(map(llist2ltup,route_data))
+
+def get_directions_google(gmaps, origin, destination):
+    dirs = gmaps.directions(origin=origin, destination=destination)
+    overview_polyline = dirs[0].get('overview_polyline')
+    if overview_polyline is not None:
+        route_decoded = googlemaps.convert.decode_polyline(overview_polyline['points'])
+    else:
+        pass
+
+    return list(map(ldict2ltup,route_decoded))
+
+########################################
+
 # Functions to update mapscatter component
-@app.callback(
-              Output('map-graph', 'figure'),
-              [Input('map-graph', 'clickData')],
+@app.callback(Output('map-graph', 'figure'),
+              [Input('map-graph', 'clickData'),
+               Input('route_profile', 'value')],
               [State('map-graph', 'relayoutData')])
-def _update_routes(clickData, relayoutData):
+def _update_routes(clickData, profile, relayoutData):
     if clickData == None:
         print('Initial Map')
         return gen_map(map_data)
@@ -308,17 +328,22 @@ def _update_routes(clickData, relayoutData):
         print('Click Event')
         source_data = map_data.loc[clickData['points'][0]['pointIndex'],:]
         target_data = map_data.loc[source_data['LINK'],:]
+
         source = tuple([source_data['C_LAT'], source_data['C_LONG']])
-        target = tuple([target_data['C_LAT'], target_data['C_LONG']])
         #source = tuple([source_data.geometry.x, source_data.geometry.y])
+        target = tuple([target_data['C_LAT'], target_data['C_LONG']])
         #target = tuple([target_data.geometry.x, target_data.geometry.y])
-        #route_line = get_scattermap_lines(source, target)
-        #route_line = get_directions(gmaps, source, target)
-        route_line = get_directions_mapbox(source, target)
+
+        #Selecciona la generación de rutas
+        route_line = get_scattermap_lines(source, target) # Obtain route from graph
+        #route_line = get_directions(gmaps, source, target) # Obtain route from google maps API
+        #route_line = get_directions_mapbox(source, target, profile=profile) # Obtain route from mapbox API
+
         route_line.insert(0, tuple([source_data['C_LAT'], source_data['C_LONG']]))
         route_line.append(tuple([target_data['C_LAT'], target_data['C_LONG']]))
         new_map = gen_map(map_data, route_line, initial_map=False)
         new_map['data'][2]['marker']['color'] = [source_data['color'], target_data['color']]
+
         if relayoutData:
             if 'mapbox.center' in relayoutData:
                 new_map['layout']['mapbox']['center'] = relayoutData['mapbox.center']
