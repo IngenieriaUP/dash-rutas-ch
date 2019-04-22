@@ -1,6 +1,4 @@
 # Import dependencies
-from warnings import filterwarnings
-filterwarnings('ignore')
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -14,10 +12,13 @@ import plotly
 import os
 import requests
 import time
-from dash.dependencies import Input, Output, State
-from shapely.geometry import LineString, Point
 import googlemaps
 import matplotlib as plt
+from dash.dependencies import Input, Output, State
+from shapely.geometry import LineString, Point
+from warnings import filterwarnings
+
+filterwarnings('ignore')
 
 # Initialize dash application
 app = dash.Dash()
@@ -69,8 +70,6 @@ map_data["color"] = map_data.apply(lambda x: '#4682B4' if x['TYPE'] == "Colegio"
 #print('#'*40)
 
 layout = dict(
-    autosize=True,
-    height = 1080,
     font=dict(color="#edefef"),
     titlefont=dict(
         color="#edefef",
@@ -179,27 +178,24 @@ def gen_map(map_data, route_line=None, initial_map=True):
             "layout": layout,
             }
 
-app.layout = html.Div(
-
-    [
-    # Map
-    html.Div([
-        dcc.Graph(id='map-graph'),
-        dcc.Dropdown(
-            id='route_profile',
-            options=[
-                {'label': 'En automóvil', 'value':'driving'},
-                {'label': 'Caminando', 'value':'walking'}
-            ],
-            value='walking'
-        )
-        ], style={'margin': 'auto auto'})
-
-    ],
-
-    #style={"padding-top": "20px"},
-    className = 'ten rows'
-)
+app.layout = html.Div([
+    dcc.Graph(id='map-graph', style={'height':'90vh'}),
+    dcc.Dropdown(
+        id='route_profile',
+        options=[
+            {'label': 'En automóvil', 'value':'driving'},
+            {'label': 'Caminando', 'value':'walking'}
+        ],
+        value='walking',
+        style={
+            'height':'5vh',
+            'marginLeft':'-0.5vh',
+            'marginRigth':'0vh',
+            'marginTop':'2vh',
+            'marginBottom':'0vh'
+            }
+    )
+    ])
 
 #### Obtain route from graph ####
 
