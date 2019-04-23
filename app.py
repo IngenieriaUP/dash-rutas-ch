@@ -23,6 +23,7 @@ filterwarnings('ignore')
 # Initialize dash application
 app = dash.Dash()
 server = app.server
+app.title = 'Rutas de Evacuación'
 
 if 'DYNO' in os.environ:
     # Add Google Analytics
