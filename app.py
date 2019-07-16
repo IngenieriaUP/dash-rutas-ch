@@ -1,4 +1,5 @@
 # Import dependencies
+import geopandas as gpd
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -9,6 +10,7 @@ import numpy as np
 import pandas as pd
 import pickle
 import plotly
+import osmnx as ox
 import os
 import requests
 import time
@@ -33,10 +35,10 @@ if 'DYNO' in os.environ:
 
 # API keys
 mapbox_access_token = "pk.eyJ1IjoiY2xhdWRpbzk3IiwiYSI6ImNqbzM2NmFtMjB0YnUzd3BvenZzN3QzN3YifQ.heZHwQTY8TWhuO0u2-BxxA"
-#gmaps = googlemaps.Client(key='AIzaSyDo3XDr4zJsyynCuH9KMQc4IbPrI6YaNGY')
+gmaps = googlemaps.Client(key='AIzaSyDo3XDr4zJsyynCuH9KMQc4IbPrI6YaNGY')
 
 # Coordinate system
-#proj_utm = {'datum': 'WGS84', 'ellps': 'WGS84', 'proj': 'utm', 'zone': 18, 'units': 'm'}
+proj_utm = {'datum': 'WGS84', 'ellps': 'WGS84', 'proj': 'utm', 'zone': 18, 'units': 'm'}
 
 #colormapping
 def fadeColor(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
@@ -54,21 +56,27 @@ def fadeColor(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) 
 # Datasets
 map_data = pd.read_csv('./data/merge/POIsWithFIS.csv', index_col=0)
 map_data["color"] = map_data.apply(lambda x: '#4682B4' if x['TYPE'] == "Colegio" else fadeColor('#2ca02c','#ff0000',x['fis_score']), axis=1)
+map_data = gpd.GeoDataFrame(
+    data=map_data,
+    crs={'init': 'epsg:4326'},
+    geometry=[Point(xy) for xy in zip(map_data['C_LONG'], map_data['C_LAT'])]
+    )
+map_data = map_data.to_crs(proj_utm)
 
-#print("Loading graph")
-#init = time.time()
-#graph = pickle.load(open("data/input/lima_graph_proj.pk","rb"))
-#wait = time.time() - init
-#print("graph loaded in", wait)
+print("Loading graph")
+init = time.time()
+graph = pickle.load(open("data/input/lima_graph_proj.pk","rb"))
+wait = time.time() - init
+print("graph loaded in", wait)
 
-#print("Loading nodes")
-#init = time.time()
-#nodes = ox.graph_to_gdfs(graph, nodes=True, edges=False)
-#wait = time.time() - init
-#print("nodes loaded in", wait)
-#print('#'*40)
-#print('n_nodes:',len(nodes))
-#print('#'*40)
+print("Loading nodes")
+init = time.time()
+nodes = ox.graph_to_gdfs(graph, nodes=True, edges=False)
+wait = time.time() - init
+print("nodes loaded in", wait)
+print('#'*40)
+print('n_nodes:',len(nodes))
+print('#'*40)
 
 layout = dict(
     font=dict(color="#edefef"),
@@ -200,6 +208,8 @@ app.layout = html.Div([
 
 #### Obtain route from graph ####
 
+## Helpers
+
 def get_boundingbox(x, y, margin):
     x = Point(x)
     y = Point(y)
@@ -209,11 +219,11 @@ def get_boundingbox(x, y, margin):
     ymin -= margin
     xmax += margin
     ymax += margin
-    print('bbox:',xmin, ymin, xmax, ymax)
+    print('bbox:', xmin, xmax, ymin, ymax)
     return xmin, ymin, xmax, ymax
 
-def get_subgraph(graph, nodes, source, target):
-    xmin, ymin, xmax, ymax = get_boundingbox(source, target, margin=50)
+def get_subgraph(graph, nodes, source, target, margin):
+    xmin, ymin, xmax, ymax = get_boundingbox(source, target, margin=margin)
     subgraph_nodes_ix = nodes.cx[xmin:xmax, ymin:ymax].index
     print('n_subgraph_nodes:',len(subgraph_nodes_ix))
     print("Getting subgraph")
@@ -237,6 +247,7 @@ def get_route_data(route, nodes):
     print('n_route_nodes:',len(route_nodes))
     route_line = list(zip(route_nodes.lat, route_nodes.lon))
     route_linestr = LineString(route_nodes.geometry.values.tolist())
+
     route_geom = gpd.GeoDataFrame(crs=nodes.crs)
     route_geom['geometry'] = None
     route_geom['osmids'] = None
@@ -245,9 +256,11 @@ def get_route_data(route, nodes):
     route_geom['length_m'] = route_geom.length
     return route_geom, route_line
 
+## Main function
+
 def get_scattermap_lines(source, target):
     # Filter graph to reduce time
-    subgraph, subgraph_nodes_ix = get_subgraph(graph, nodes, source, target)
+    subgraph, subgraph_nodes_ix = get_subgraph(graph, nodes, source, target, 5000)
     # Get nearest nodes in the subgraph
     source_node_id, target_node_id = get_nearest_nodes(subgraph, source, target)
 
@@ -324,14 +337,16 @@ def _update_routes(clickData, profile, relayoutData):
         source_data = map_data.loc[clickData['points'][0]['pointIndex'],:]
         target_data = map_data.loc[source_data['LINK'],:]
 
-        source = tuple([source_data['C_LAT'], source_data['C_LONG']])
-        #source = tuple([source_data.geometry.x, source_data.geometry.y])
-        target = tuple([target_data['C_LAT'], target_data['C_LONG']])
-        #target = tuple([target_data.geometry.x, target_data.geometry.y])
+        # source = tuple([source_data['C_LAT'], source_data['C_LONG']])
+        # target = tuple([target_data['C_LAT'], target_data['C_LONG']])
 
-        #route_line = get_scattermap_lines(source, target) # Obtain route from graph
-        #route_line = get_directions(gmaps, source, target) # Obtain route from google maps API
-        route_line = get_directions_mapbox(source, target, profile=profile) # Obtain route from mapbox API
+        source = tuple([source_data.geometry.x, source_data.geometry.y])
+        target = tuple([target_data.geometry.x, target_data.geometry.y])
+
+        route_line = get_scattermap_lines(source, target) # Obtain route from graph
+        #print(route_line)
+        #route_line = get_directions_google(gmaps, source, target) # Obtain route from google maps API
+        #route_line = get_directions_mapbox(source, target, profile=profile) # Obtain route from mapbox API
 
         route_line.insert(0, tuple([source_data['C_LAT'], source_data['C_LONG']]))
         route_line.append(tuple([target_data['C_LAT'], target_data['C_LONG']]))
