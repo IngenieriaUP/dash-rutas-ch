@@ -193,7 +193,7 @@ def gen_map(map_data, route_line=None, route_labels=None, initial_map=True):
             }
 
 app.layout = html.Div([
-    html.H1('Rutas de evacuacion de colegios a hospitales', style={'font-family': 'Dosis'}),
+    html.H1('Rutas de evacuación de colegios a hospitales', style={'font-family': 'Dosis'}),
     html.P('Selecciona un colegio para ver la ruta más corta hacia el hospital asignado.', style={'font-family': 'Dosis'}),
     dcc.Graph(id='map-graph', style={'height':'75vh'}),
     html.P('Selecciona el medio de transporte de la ruta.'),
