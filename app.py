@@ -188,6 +188,10 @@ def gen_map(map_data, route_line=None, initial_map=True):
             }
 
 app.layout = html.Div([
+    dcc.Markdown('''
+    ## Rutas de evacuacion de colegios a hospitales
+    Selecciona un colegio para ver la ruta más corta hacia al hospital asignado.
+    ''')
     dcc.Graph(id='map-graph', style={'height':'90vh'}),
     dcc.Dropdown(
         id='route_profile',
