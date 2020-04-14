@@ -191,8 +191,8 @@ app.layout = html.Div([
     dcc.Markdown('''
     ## Rutas de evacuacion de colegios a hospitales
     Selecciona un colegio para ver la ruta más corta hacia al hospital asignado.
-    ''')
-    dcc.Graph(id='map-graph', style={'height':'90vh'}),
+    '''),
+    dcc.Graph(id='map-graph', style={'height':'85vh'}),
     dcc.Dropdown(
         id='route_profile',
         options=[
