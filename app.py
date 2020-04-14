@@ -5,16 +5,16 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table_experiments as dt
 import flask
-import networkx as nx
+#import networkx as nx
 import numpy as np
 import pandas as pd
 import pickle
 import plotly
-import osmnx as ox
+#import osmnx as ox
 import os
 import requests
 import time
-import googlemaps
+#import googlemaps
 import matplotlib as plt
 from dash.dependencies import Input, Output, State
 from shapely.geometry import LineString, Point
@@ -35,7 +35,7 @@ if 'DYNO' in os.environ:
 
 # API keys
 mapbox_access_token = "pk.eyJ1IjoiY2xhdWRpbzk3IiwiYSI6ImNqbzM2NmFtMjB0YnUzd3BvenZzN3QzN3YifQ.heZHwQTY8TWhuO0u2-BxxA"
-gmaps = googlemaps.Client(key='AIzaSyDo3XDr4zJsyynCuH9KMQc4IbPrI6YaNGY')
+#gmaps = googlemaps.Client(key='AIzaSyDo3XDr4zJsyynCuH9KMQc4IbPrI6YaNGY')
 
 # Coordinate system
 proj_utm = {'datum': 'WGS84', 'ellps': 'WGS84', 'proj': 'utm', 'zone': 18, 'units': 'm'}
@@ -61,21 +61,21 @@ map_data = gpd.GeoDataFrame(
     crs={'init': 'epsg:4326'},
     geometry=[Point(xy) for xy in zip(map_data['C_LONG'], map_data['C_LAT'])]
     )
-map_data = map_data.to_crs(proj_utm)
+#map_data = map_data.to_crs(proj_utm)
 
 print("Loading graph")
 init = time.time()
-graph = pickle.load(open("data/input/lima_graph_proj.pk","rb"))
+#graph = pickle.load(open("data/input/lima_graph_proj.pk","rb"))
 wait = time.time() - init
 print("graph loaded in", wait)
 
 print("Loading nodes")
 init = time.time()
-nodes = ox.graph_to_gdfs(graph, nodes=True, edges=False)
+#nodes = ox.graph_to_gdfs(graph, nodes=True, edges=False)
 wait = time.time() - init
 print("nodes loaded in", wait)
 print('#'*40)
-print('n_nodes:',len(nodes))
+#print('n_nodes:',len(nodes))
 print('#'*40)
 
 layout = dict(
@@ -188,10 +188,10 @@ def gen_map(map_data, route_line=None, initial_map=True):
             }
 
 app.layout = html.Div([
+    html.H1('Rutas de evacuacion de colegios a hospitales', style={'font-family': 'Dosis'}, className="title"),
     dcc.Markdown('''
-    ## Rutas de evacuacion de colegios a hospitales
     Selecciona un colegio para ver la ruta más corta hacia al hospital asignado.
-    '''),
+    ''', style={'font-family': 'Dosis', 'height': '5vh'}),
     dcc.Graph(id='map-graph', style={'height':'85vh'}),
     dcc.Dropdown(
         id='route_profile',
@@ -302,12 +302,14 @@ def llist2ltup(d):
 
 def get_directions_mapbox(source, target, profile):
     # Mapbox driving direction API call
-    source_str = "{},{}".format(source[1],source[0])
-    target_str = "{},{}".format(target[1],target[0])
+    source_str = "{},{}".format(source[0],source[1])
+    target_str = "{},{}".format(target[0],target[1])
     coords = ";".join([source_str,target_str])
-    ROUTE_URL = "https://api.mapbox.com/directions/v5/mapbox/" + profile + "/" + str(source[1]) + "," + str(source[0]) + ";" + str(target[1]) + "," + str(target[0]) + "?geometries=geojson&access_token=" + mapbox_access_token
+    print(coords)
+    ROUTE_URL = "https://api.mapbox.com/directions/v5/mapbox/" + profile + "/" + coords + "?geometries=geojson&access_token=" + mapbox_access_token
     result = requests.get(ROUTE_URL)
     data = result.json()
+    print(data)
     route_data = data["routes"][0]["geometry"]["coordinates"]
     return list(map(llist2ltup,route_data))
 
@@ -347,10 +349,10 @@ def _update_routes(clickData, profile, relayoutData):
         source = tuple([source_data.geometry.x, source_data.geometry.y])
         target = tuple([target_data.geometry.x, target_data.geometry.y])
 
-        route_line = get_scattermap_lines(source, target) # Obtain route from graph
+        #route_line = get_scattermap_lines(source, target) # Obtain route from graph
         #print(route_line)
         #route_line = get_directions_google(gmaps, source, target) # Obtain route from google maps API
-        #route_line = get_directions_mapbox(source, target, profile=profile) # Obtain route from mapbox API
+        route_line = get_directions_mapbox(source, target, profile=profile) # Obtain route from mapbox API
 
         route_line.insert(0, tuple([source_data['C_LAT'], source_data['C_LONG']]))
         route_line.append(tuple([target_data['C_LAT'], target_data['C_LONG']]))
@@ -368,8 +370,8 @@ def _update_routes(clickData, profile, relayoutData):
 
 # Boostrap CSS.
 external_css = ["https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css",
-                "//fonts.googleapis.com/css?family=Raleway:400,300,600",
-                "//fonts.googleapis.com/css?family=Dosis:Medium",
+                "https://fonts.googleapis.com/css?family=Raleway:400,300,600",
+                "https://fonts.googleapis.com/css?family=Dosis:Medium",
                 "https://cdn.rawgit.com/plotly/dash-app-stylesheets/62f0eb4f1fadbefea64b2404493079bf848974e8/dash-uber-ride-demo.css",
                 "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"]
 
