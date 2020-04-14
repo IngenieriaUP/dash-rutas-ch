@@ -117,7 +117,7 @@ layout = dict(
 
 )
 
-def gen_map(map_data, route_line=None, initial_map=True):
+def gen_map(map_data, route_line=None, route_labels=None, initial_map=True):
     points = {
             "type": "scattermapbox",
             "lat": map_data['C_LAT'],
@@ -158,19 +158,24 @@ def gen_map(map_data, route_line=None, initial_map=True):
                 "lat": [tuple_xy[0] for tuple_xy in route_line],
                 "lon": [tuple_xy[1] for tuple_xy in route_line],
                 "mode": "lines+markers",
+                "hoverinfo": "text",
                 "line": {
                     "width": 5,
                     "opacity": 0.5,
                     "color": 'green',
                     }
                 }
+        print(route_labels)
+        print(type(route_labels))
         source_target_points = {
                                 "type": "scattermapbox",
                                 "lat": [route_line[i][0] for i in [0,-1]],
                                 "lon": [route_line[i][1] for i in [0,-1]],
+                                "text": route_labels,
+                                "hoverinfo": "text",
                                 "mode": "markers",
                                 "marker": {
-                                    "size": 17,
+                                    "size": 20,
                                     "opacity": 0.5,
                                     "color": []
                                     }
@@ -183,15 +188,15 @@ def gen_map(map_data, route_line=None, initial_map=True):
             }
     else:
         return {
-            "data": [points, points_inner, source_target_points, route],
+            "data": [points, points_inner, route, source_target_points],
             "layout": layout,
             }
 
 app.layout = html.Div([
     html.H1('Rutas de evacuacion de colegios a hospitales', style={'font-family': 'Dosis'}),
-    html.P('Selecciona un colegio para ver la ruta más corta hacia al hospital asignado.', style={'font-family': 'Dosis'}),
+    html.P('Selecciona un colegio para ver la ruta más corta hacia el hospital asignado.', style={'font-family': 'Dosis'}),
     dcc.Graph(id='map-graph', style={'height':'75vh'}),
-    html.P('Selecciona el medio de transporte para la ruta.'),
+    html.P('Selecciona el medio de transporte de la ruta.'),
     dcc.Dropdown(
         id='route_profile',
         options=[
@@ -201,10 +206,10 @@ app.layout = html.Div([
         value='walking',
         style={
             'height':'5vh',
-            'marginLeft':'-0.5vh',
-            'marginRigth':'0vh',
-            'marginTop':'2vh',
-            'marginBottom':'0vh'
+            #'marginLeft':'-0.5vh',
+            #'marginRigth':'0vh',
+            #'marginTop':'2vh',
+            #'marginBottom':'0vh'
             }
     )
     ])
@@ -355,8 +360,9 @@ def _update_routes(clickData, profile, relayoutData):
 
         route_line.insert(0, tuple([source_data['C_LAT'], source_data['C_LONG']]))
         route_line.append(tuple([target_data['C_LAT'], target_data['C_LONG']]))
-        new_map = gen_map(map_data, route_line, initial_map=False)
-        new_map['data'][2]['marker']['color'] = [source_data['color'], target_data['color']]
+        route_labels = [source_data['NOMBRE'], target_data['NOMBRE']]
+        new_map = gen_map(map_data, route_line, route_labels, initial_map=False)
+        new_map['data'][3]['marker']['color'] = [source_data['color'], target_data['color']]
 
         if relayoutData:
             if 'mapbox.center' in relayoutData:
