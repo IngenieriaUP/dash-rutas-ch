@@ -315,7 +315,14 @@ def get_directions_mapbox(source, target, profile):
     data = result.json()
     print(data)
     route_data = data["routes"][0]["geometry"]["coordinates"]
-    return list(map(llist2ltup,route_data))
+    print(data.keys())
+    print(type(data['routes']))
+    print(len(data['routes']))
+    print(data['routes'][0]['duration'])
+    
+    route_duration = round(data['routes'][0]['duration'] / 60, 2) # seconds to minutes
+    route_distance = round(data['routes'][0]['distance'], 2) # meters
+    return list(map(llist2ltup,route_data)), route_duration, route_distance
 
 def get_directions_google(gmaps, origin, destination):
     dirs = gmaps.directions(origin=origin, destination=destination)
@@ -356,13 +363,15 @@ def _update_routes(clickData, profile, relayoutData):
         #route_line = get_scattermap_lines(source, target) # Obtain route from graph
         #print(route_line)
         #route_line = get_directions_google(gmaps, source, target) # Obtain route from google maps API
-        route_line = get_directions_mapbox(source, target, profile=profile) # Obtain route from mapbox API
+        route_line, route_duration, route_distance = get_directions_mapbox(source, target, profile=profile) # Obtain route from mapbox API
 
         route_line.insert(0, tuple([source_data['C_LAT'], source_data['C_LONG']]))
         route_line.append(tuple([target_data['C_LAT'], target_data['C_LONG']]))
         route_labels = [source_data['NOMBRE'], target_data['NOMBRE']]
         new_map = gen_map(map_data, route_line, route_labels, initial_map=False)
+        print(route_duration, route_distance)
         new_map['data'][3]['marker']['color'] = [source_data['color'], target_data['color']]
+        new_map['data'][2]['text'] = ['Duración: '+str(route_duration)+' minutos\n '+'Distancia: '+str(route_distance)+' segundos' for x in range(len(route_line))]
 
         if relayoutData:
             if 'mapbox.center' in relayoutData:
