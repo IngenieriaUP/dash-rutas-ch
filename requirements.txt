@@ -21,7 +21,7 @@ gunicorn==19.9.0
 idna==2.7
 ipython-genutils==0.2.0
 itsdangerous==1.1.0
-Jinja2==2.10
+Jinja2>=2.10.1
 jsonschema==2.6.0
 jupyter-core==4.4.0
 kiwisolver==1.0.1
@@ -44,5 +44,5 @@ Rtree==0.8.3
 Shapely==1.6.4.post2
 six==1.11.0
 traitlets==4.3.2
-urllib3==1.24.1
-Werkzeug==0.14.1
+urllib3==1.24.2
+Werkzeug==0.15.3
