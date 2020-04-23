@@ -19,6 +19,7 @@ import matplotlib as plt
 from dash.dependencies import Input, Output, State
 from shapely.geometry import LineString, Point
 from warnings import filterwarnings
+from mykeys import MAPBOX_API_KEY, GOOGLE_MAPS_API_KEY
 
 filterwarnings('ignore')
 
@@ -34,8 +35,8 @@ if 'DYNO' in os.environ:
     })
 
 # API keys
-mapbox_access_token = "pk.eyJ1IjoiY2xhdWRpbzk3IiwiYSI6ImNqbzM2NmFtMjB0YnUzd3BvenZzN3QzN3YifQ.heZHwQTY8TWhuO0u2-BxxA"
-#gmaps = googlemaps.Client(key='AIzaSyDo3XDr4zJsyynCuH9KMQc4IbPrI6YaNGY')
+mapbox_access_token = MAPBOX_API_KEY
+#gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
 
 # Coordinate system
 proj_utm = {'datum': 'WGS84', 'ellps': 'WGS84', 'proj': 'utm', 'zone': 18, 'units': 'm'}
