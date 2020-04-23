@@ -5,16 +5,16 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table_experiments as dt
 import flask
-import networkx as nx
+#import networkx as nx
 import numpy as np
 import pandas as pd
 import pickle
 import plotly
-import osmnx as ox
+#import osmnx as ox
 import os
 import requests
 import time
-import googlemaps
+#import googlemaps
 import matplotlib as plt
 from dash.dependencies import Input, Output, State
 from shapely.geometry import LineString, Point
@@ -35,7 +35,7 @@ if 'DYNO' in os.environ:
 
 # API keys
 mapbox_access_token = "pk.eyJ1IjoiY2xhdWRpbzk3IiwiYSI6ImNqbzM2NmFtMjB0YnUzd3BvenZzN3QzN3YifQ.heZHwQTY8TWhuO0u2-BxxA"
-gmaps = googlemaps.Client(key='AIzaSyDo3XDr4zJsyynCuH9KMQc4IbPrI6YaNGY')
+#gmaps = googlemaps.Client(key='AIzaSyDo3XDr4zJsyynCuH9KMQc4IbPrI6YaNGY')
 
 # Coordinate system
 proj_utm = {'datum': 'WGS84', 'ellps': 'WGS84', 'proj': 'utm', 'zone': 18, 'units': 'm'}
@@ -61,21 +61,21 @@ map_data = gpd.GeoDataFrame(
     crs={'init': 'epsg:4326'},
     geometry=[Point(xy) for xy in zip(map_data['C_LONG'], map_data['C_LAT'])]
     )
-map_data = map_data.to_crs(proj_utm)
+#map_data = map_data.to_crs(proj_utm)
 
 print("Loading graph")
 init = time.time()
-graph = pickle.load(open("data/input/lima_graph_proj.pk","rb"))
+#graph = pickle.load(open("data/input/lima_graph_proj.pk","rb"))
 wait = time.time() - init
 print("graph loaded in", wait)
 
 print("Loading nodes")
 init = time.time()
-nodes = ox.graph_to_gdfs(graph, nodes=True, edges=False)
+#nodes = ox.graph_to_gdfs(graph, nodes=True, edges=False)
 wait = time.time() - init
 print("nodes loaded in", wait)
 print('#'*40)
-print('n_nodes:',len(nodes))
+#print('n_nodes:',len(nodes))
 print('#'*40)
 
 layout = dict(
@@ -117,7 +117,7 @@ layout = dict(
 
 )
 
-def gen_map(map_data, route_line=None, initial_map=True):
+def gen_map(map_data, route_line=None, route_labels=None, initial_map=True):
     points = {
             "type": "scattermapbox",
             "lat": map_data['C_LAT'],
@@ -158,19 +158,24 @@ def gen_map(map_data, route_line=None, initial_map=True):
                 "lat": [tuple_xy[0] for tuple_xy in route_line],
                 "lon": [tuple_xy[1] for tuple_xy in route_line],
                 "mode": "lines+markers",
+                "hoverinfo": "text",
                 "line": {
                     "width": 5,
                     "opacity": 0.5,
                     "color": 'green',
                     }
                 }
+        print(route_labels)
+        print(type(route_labels))
         source_target_points = {
                                 "type": "scattermapbox",
                                 "lat": [route_line[i][0] for i in [0,-1]],
                                 "lon": [route_line[i][1] for i in [0,-1]],
+                                "text": route_labels,
+                                "hoverinfo": "text",
                                 "mode": "markers",
                                 "marker": {
-                                    "size": 17,
+                                    "size": 20,
                                     "opacity": 0.5,
                                     "color": []
                                     }
@@ -183,16 +188,15 @@ def gen_map(map_data, route_line=None, initial_map=True):
             }
     else:
         return {
-            "data": [points, points_inner, source_target_points, route],
+            "data": [points, points_inner, route, source_target_points],
             "layout": layout,
             }
 
 app.layout = html.Div([
-    dcc.Markdown('''
-    ## Rutas de evacuacion de colegios a hospitales
-    Selecciona un colegio para ver la ruta más corta hacia al hospital asignado.
-    ''')
-    dcc.Graph(id='map-graph', style={'height':'90vh'}),
+    html.H1('Rutas de evacuación de colegios a hospitales', style={'font-family': 'Dosis'}),
+    html.P('Selecciona un colegio para ver la ruta más corta hacia el hospital asignado.', style={'font-family': 'Dosis'}),
+    dcc.Graph(id='map-graph', style={'height':'75vh'}),
+    html.P('Selecciona el medio de transporte de la ruta.'),
     dcc.Dropdown(
         id='route_profile',
         options=[
@@ -202,10 +206,10 @@ app.layout = html.Div([
         value='walking',
         style={
             'height':'5vh',
-            'marginLeft':'-0.5vh',
-            'marginRigth':'0vh',
-            'marginTop':'2vh',
-            'marginBottom':'0vh'
+            #'marginLeft':'-0.5vh',
+            #'marginRigth':'0vh',
+            #'marginTop':'2vh',
+            #'marginBottom':'0vh'
             }
     )
     ])
@@ -302,14 +306,23 @@ def llist2ltup(d):
 
 def get_directions_mapbox(source, target, profile):
     # Mapbox driving direction API call
-    source_str = "{},{}".format(source[1],source[0])
-    target_str = "{},{}".format(target[1],target[0])
+    source_str = "{},{}".format(source[0],source[1])
+    target_str = "{},{}".format(target[0],target[1])
     coords = ";".join([source_str,target_str])
-    ROUTE_URL = "https://api.mapbox.com/directions/v5/mapbox/" + profile + "/" + str(source[1]) + "," + str(source[0]) + ";" + str(target[1]) + "," + str(target[0]) + "?geometries=geojson&access_token=" + mapbox_access_token
+    print(coords)
+    ROUTE_URL = "https://api.mapbox.com/directions/v5/mapbox/" + profile + "/" + coords + "?geometries=geojson&access_token=" + mapbox_access_token
     result = requests.get(ROUTE_URL)
     data = result.json()
+    print(data)
     route_data = data["routes"][0]["geometry"]["coordinates"]
-    return list(map(llist2ltup,route_data))
+    print(data.keys())
+    print(type(data['routes']))
+    print(len(data['routes']))
+    print(data['routes'][0]['duration'])
+    
+    route_duration = round(data['routes'][0]['duration'] / 60, 2) # seconds to minutes
+    route_distance = round(data['routes'][0]['distance'], 2) # meters
+    return list(map(llist2ltup,route_data)), route_duration, route_distance
 
 def get_directions_google(gmaps, origin, destination):
     dirs = gmaps.directions(origin=origin, destination=destination)
@@ -347,15 +360,18 @@ def _update_routes(clickData, profile, relayoutData):
         source = tuple([source_data.geometry.x, source_data.geometry.y])
         target = tuple([target_data.geometry.x, target_data.geometry.y])
 
-        route_line = get_scattermap_lines(source, target) # Obtain route from graph
+        #route_line = get_scattermap_lines(source, target) # Obtain route from graph
         #print(route_line)
         #route_line = get_directions_google(gmaps, source, target) # Obtain route from google maps API
-        #route_line = get_directions_mapbox(source, target, profile=profile) # Obtain route from mapbox API
+        route_line, route_duration, route_distance = get_directions_mapbox(source, target, profile=profile) # Obtain route from mapbox API
 
         route_line.insert(0, tuple([source_data['C_LAT'], source_data['C_LONG']]))
         route_line.append(tuple([target_data['C_LAT'], target_data['C_LONG']]))
-        new_map = gen_map(map_data, route_line, initial_map=False)
-        new_map['data'][2]['marker']['color'] = [source_data['color'], target_data['color']]
+        route_labels = [source_data['NOMBRE'], target_data['NOMBRE']]
+        new_map = gen_map(map_data, route_line, route_labels, initial_map=False)
+        print(route_duration, route_distance)
+        new_map['data'][3]['marker']['color'] = [source_data['color'], target_data['color']]
+        new_map['data'][2]['text'] = ['Duración: '+str(route_duration)+' minutos\n '+'Distancia: '+str(route_distance)+' segundos' for x in range(len(route_line))]
 
         if relayoutData:
             if 'mapbox.center' in relayoutData:
@@ -368,8 +384,8 @@ def _update_routes(clickData, profile, relayoutData):
 
 # Boostrap CSS.
 external_css = ["https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css",
-                "//fonts.googleapis.com/css?family=Raleway:400,300,600",
-                "//fonts.googleapis.com/css?family=Dosis:Medium",
+                "https://fonts.googleapis.com/css?family=Raleway:400,300,600",
+                "https://fonts.googleapis.com/css?family=Dosis:Medium",
                 "https://cdn.rawgit.com/plotly/dash-app-stylesheets/62f0eb4f1fadbefea64b2404493079bf848974e8/dash-uber-ride-demo.css",
                 "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"]
 
